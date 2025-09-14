@@ -1,6 +1,5 @@
 # hadoop-yarn-hive-spark-docker
 
-## Table of Contents
 - [Prequisites](#prequisites)
 - [Starting and Stopping cluster](#starting-and-stopping-cluster)
 - [Handy UI Urls](#handy-ui-urls)
