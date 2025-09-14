@@ -1,19 +1,15 @@
-# Hadoop-YARN-Hive-Spark Docker Cluster
+# hadoop-yarn-hive-spark-docker
 
-A lightweight Docker setup for running a local Hadoop + YARN + Hive + Spark cluster with optional Jupyter support.
-
-## Table of Contents
-- [Prerequisites](#prerequisites)
-- [Starting and Stopping the Cluster](#starting-and-stopping-the-cluster)
-- [Handy UI URLs](#handy-ui-urls)
-- [Testing Spark-HDFS-Hive Integration](#testing-spark-hdfs-hive-integration)
-  - [Set up Hive Database and Table](#set-up-hive-database-and-table)
-  - [Verify Access from Spark](#verify-access-from-spark)
-  - [Verify Access from PySpark](#verify-access-from-pyspark)
-- [Jupyter Notebook Usage](#jupyter-notebook-usage)
-  - [Using Jupyter Lab](#using-jupyter-lab)
-  - [Using VSCode Jupyter](#using-vscode-jupyter)
-
+- [Prequisites](#prequisites)
+- [Starting and Stopping cluster](#starting-and-stopping-cluster)
+- [Handy UI Urls](#handy-ui-urls)
+- [Test same spark-hdfs-hive integration](#test-same-spark-hdfs-hive-integration)
+  - [set up hive database and table](#set-up-hive-database-and-table)
+  - [Verify if hdfs and hive are reachable from spark](#verify-if-hdfs-and-hive-are-reachable-from-spark)
+  - [Verify if hdfs and hive are reachable from pyspark](#verify-if-hdfs-and-hive-are-reachable-from-pyspark)
+- [Jupyter notebook example](#jupyter-notebook-example)
+  - [Using jupyter lab notebook](#using-jupyter-lab-notebook)
+  - [Using jupyter notebook in VSCode](#using-jupyter-notebook-in-vscode)
 ---
 
 ## Prerequisites
@@ -42,108 +38,163 @@ spark-3.1.1-bin-hadoop3.2.tgz
 ```
 
 ---
+### Starting and Stopping cluster
+Run below commands to start and stop the cluster:  
+  - On `sh` compatible shell
+    ```shell
+     sh start-docker-hadoop-cluster.sh
+     sh stop-docker-hadoop-cluster.sh
+    ```
 
-## Starting and Stopping the Cluster
-
-Run the following commands from your project directory:
-
-<details>
-<summary>For <code>sh</code> compatible shells:</summary>
-
-```bash
-sh start-docker-hadoop-cluster.sh
-sh stop-docker-hadoop-cluster.sh
-```
-</details>
-
-<details>
-<summary>For <code>bash</code> compatible shells:</summary>
-
-```bash
-bash start-docker-hadoop-cluster.sh
-bash stop-docker-hadoop-cluster.sh
-```
-</details>
+  - On `bash` compatible shell
+    ```shell
+      bash start-docker-hadoop-cluster.sh
+      bash stop-docker-hadoop-cluster.sh
+    ```
+---
+### Handy UI Urls:  
+| Resource | UI Link |
+|---|---|
+|Namenode UI | http://localhost:9870 |
+|Yarn UI | http://localhost:8088 |
+|Spark Master UI | http://localhost:8080 |  
+|Jupyter UI | http://localhost:8888 | 
 
 ---
 
-## Handy UI URLs
-
-| Resource | URL |
-|----------|-----|
-| **NameNode UI** | [http://localhost:9870](http://localhost:9870) |
-| **YARN ResourceManager UI** | [http://localhost:8088](http://localhost:8088) |
-| **Spark Master UI** | [http://localhost:8080](http://localhost:8080) |
-| **Jupyter Lab** | [http://localhost:8888](http://localhost:8888) |
-
----
-
-## Testing Spark-HDFS-Hive Integration
-
-### Set up Hive Database and Table
-
-<details>
-<summary>Step-by-step</summary>
-
-```bash
-# Access the Hive server container
+### Test same spark-hdfs-hive integration
+#### set up hive database and table
+```shell
+# Login to hive-server container
 docker exec -it hive-server /bin/bash
 
-# Start Beeline (Hive CLI)
+# Initiate beeline session in hive-server container
 beeline -u "jdbc:hive2://localhost:10000"
 ```
-
 ```sql
--- Create Hive database
+-- Create hive database named 'crm'
 CREATE DATABASE IF NOT EXISTS crm
-COMMENT 'Employee database'
+COMMENT 'This is a database for employee data'
 LOCATION '/user/hive/warehouse/crm.db';
 
--- Create Hive table
+-- Create hive table 'emp' in 'crm' database
 CREATE EXTERNAL TABLE crm.emp(
-  empid INT,
-  empname STRING
+  empid int,
+  empname string
 )
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY ','
 STORED AS TEXTFILE
-LOCATION '/user/hive/warehouse/crm.db/emp';
+LOCATION '/user/hive/warehouse/crm.db/emp'
+;
 ```
+Copy sample data file to `crm.emp` tables hdfs location
+```shell
+# from host(local machine) copy the sample file ./lib/emp.txt into ./hdfs_namenode/
+# Now this file will be available on name node container in the location '/hadoop/dfs/name/'
+cp ./lib/emp.txt into ./hdfs_namenode/
 
-```bash
-# Copy sample file to HDFS
-cp ./lib/emp.txt ./hdfs_namenode/
-
+# Login to namenode container
 docker exec -it namenode /bin/bash
 cd /hadoop/dfs/name/
-hdfs dfs -put emp.txt /user/hive/warehouse/crm.db/emp/
+ls -l
+
+# copy this file to crm.emp table's hdfs location
+hdfs dfs -put /hadoop/dfs/name/emp.txt /user/hive/warehouse/crm.db/emp/
+
+# verify the file
 hdfs dfs -ls /user/hive/warehouse/crm.db/emp/
 ```
 
-</details>
-
----
-
-### Verify Access from Spark
-
-<details>
-<summary>Run in <code>spark-shell</code></summary>
-
-```bash
+Verify if hdfs and hive are reachable from spark
+```shell
+# Login to spark-master container
 docker exec -it spark-master /bin/bash
+
+# Start spark shell
 spark-shell --master spark://spark-master:7077
 ```
-
 ```scala
-// Read file from HDFS
+// Read file from hdfs into spark
 val df = spark.read.csv("hdfs://namenode:8020/user/hive/warehouse/crm.db/emp/emp.txt")
 df.show(false)
 
-// Verify Hive is the catalog
+// Verify spark sql implementation: should be 'hive'
 spark.conf.get("spark.sql.catalogImplementation")
 
-// List Hive databases
+// List databases from hive
 spark.catalog.listDatabases().show()
 
-// Query Hive table
-val
+// Read table from hive into spark
+val h = spark.table("crm.emp")
+h.show(10, false)
+
+```
+
+Verify if hdfs and hive are reachable from pyspark
+```shell
+# Login to spark-master container
+docker exec -it spark-master /bin/bash
+
+# Start spark shell
+pyspark --master spark://spark-master:7077
+```
+```python
+# Read file from hdfs into spark
+df = spark.read.csv("hdfs://namenode:8020/user/hive/warehouse/crm.db/emp/emp.txt")
+df.show(False)
+
+# Verify spark sql implementation: should be 'hive'
+spark.conf.get("spark.sql.catalogImplementation")
+
+# List databases from hive
+spark.catalog.listDatabases().show()
+
+# Read table from hive into spark
+h = spark.table("crm.emp")
+h.show(10, False)
+
+```
+---
+
+### Jupyter notebook example
+How get jupyter server url:
+```shell
+docker logs jupyter
+
+# look in the logs for the the jupyter lab URL which looks like:
+http://127.0.0.1:8888/lab?token=a12345678901234567890......
+```
+### Using jupyter lab notebook
+Open the above link and it will take you to the lab. select `Notebook` and use the code below to verify the setup.
+
+### Using jupyter notebook in VSCode
+1. Open VSCode in a WSL  
+1. create an ipynb file  
+1. Select Kernel -> select 'Existing Jupyter Server URL'  
+1. Paste the link taken from jupyter container log -> Enter  
+1. It shows 127.0.0.1 -> Enter  
+1. Select the python environment listed from jupyter server  
+
+```python
+from pyspark.sql import SparkSession
+
+# Initialize SparkSession with Hive support
+spark = SparkSession.builder \
+    .appName("VSCode-Jupyter-Test") \
+    .master("spark://spark-master:7077") \
+    .config("spark.hadoop.fs.defaultFS", "hdfs://namenode:8020") \
+    .enableHiveSupport() \
+    .getOrCreate()
+
+# Log the Spark version
+print(f"Spark version: {spark.version}")
+
+spark.conf.get("spark.sql.catalogImplementation") # should show 'hive'
+
+# Show current databases
+spark.sql("SHOW DATABASES").show()
+
+spark.table("crm.emp").show(10, False) # db and table should be already created and available in hive
+
+```
