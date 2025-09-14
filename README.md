@@ -1,34 +1,50 @@
 # hadoop-yarn-hive-spark-docker
 
+## Table of Contents
+- [Prequisites](#prequisites)
+- [Starting and Stopping cluster](#starting-and-stopping-cluster)
+- [Handy UI Urls](#handy-ui-urls)
+- [Test same spark-hdfs-hive integration](#test-same-spark-hdfs-hive-integration)
+  - [set up hive database and table](#set-up-hive-database-and-table)
+  - [Verify if hdfs and hive are reachable from spark](#verify-if-hdfs-and-hive-are-reachable-from-spark)
+  - [Verify if hdfs and hive are reachable from pyspark](#verify-if-hdfs-and-hive-are-reachable-from-pyspark)
+- [Jupyter notebook example](#jupyter-notebook-example)
+  - [Using jupyter lab notebook](#using-jupyter-lab-notebook)
+  - [Using jupyter notebook in VSCode](#using-jupyter-notebook-in-vscode)
+---
+
 ### Prequisites
 - Install Docker Engine
-- Download [apache-hive-2.3.2-bin.tar.gz](https://archive.apache.org/dist/hive/hive-2.3.2/) and copy the file to under lib directory present in this current working directory. This dependency is used to integrate spark with hive. At the end of this step below will be the status
+- Download [apache-hive-2.3.2-bin.tar.gz](https://archive.apache.org/dist/hive/hive-2.3.2/) and copy the file to under lib directory present in this current working directory. This dependency is used to integrate spark with hive. 
+- Below three dependencies are needed if you want to run `spark-shell`/`pyspark` or `spark-submit`, `beeline` from host machine or using jupyter notebook.
+  - Download [spark-3.1.1-bin-hadoop3.2.tgz](https://archive.apache.org/dist/spark/spark-3.1.1/spark-3.1.1-bin-hadoop3.2.tgz)
+  - Download [pyspark-3.1.1.tar.gz](https://archive.apache.org/dist/spark/spark-3.1.1/pyspark-3.1.1.tar.gz)
+  - Download [hadoop-3.2.1.tar.gz](https://archive.apache.org/dist/hadoop/common/hadoop-3.2.1/hadoop-3.2.1.tar.gz)
+
+Eventually, lib folder contents should be as below:
 ```shell
 $ ls -l ./lib
 apache-hive-2.3.2-bin.tar.gz
 emp.txt
+hadoop-3.2.1.tar.gz
 postgresql-42.7.7.jar
+pyspark-3.1.1.tar.gz
+spark-3.1.1-bin-hadoop3.2.tgz
 ```
-
-Below three dependencies are needed if you want to run `spark-shell`/`pyspark` or `spark-submit`, `beeline` from host machine.
-- Download [spark-3.1.1-bin-hadoop3.2.tgz ](https://archive.apache.org/dist/spark/spark-3.1.1/spark-3.1.1-bin-hadoop3.2.tgz)
-- Download [pyspark-3.1.1.tar.gz](https://archive.apache.org/dist/spark/spark-3.1.1/pyspark-3.1.1.tar.gz)
-- Download [hadoop-3.2.1.tar.gz](https://archive.apache.org/dist/hadoop/common/hadoop-3.2.1/hadoop-3.2.1.tar.gz)
-
 ---
 ### Starting and Stopping cluster
 Run below commands to start and stop the cluster:  
-On `sh` compatible shell
-```shell
-sh start-docker-hadoop-cluster.sh
-sh stop-docker-hadoop-cluster.sh
-```
+  - On `sh` compatible shell
+    ```shell
+     sh start-docker-hadoop-cluster.sh
+     sh stop-docker-hadoop-cluster.sh
+    ```
 
-On `bash` compatible shell
-```shell
-bash start-docker-hadoop-cluster.sh
-bash stop-docker-hadoop-cluster.sh
-```
+  - On `bash` compatible shell
+    ```shell
+      bash start-docker-hadoop-cluster.sh
+      bash stop-docker-hadoop-cluster.sh
+    ```
 ---
 ### Handy UI Urls:  
 | Resource | UI Link |
