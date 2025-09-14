@@ -1,0 +1,57 @@
+FROM jupyter/scipy-notebook:python-3.10
+
+# Match Spark and Hadoop versions with your cluster
+ENV SPARK_VERSION=3.1.1
+ENV HADOOP_VERSION=3.2
+
+USER root
+
+# Install Java 8 (required for older Spark/Hadoop builds)
+RUN apt-get update && apt-get install -y \
+    openjdk-8-jdk \
+    curl \
+    wget \
+    python3-pip \
+    # libsasl2-dev \
+    # python3-dev \
+    # libldap2-dev \
+    # libssl-dev \
+    # build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+# Ensure 'python' points to 'python3'
+RUN ln -s /usr/bin/python3 /usr/bin/python
+
+ENV JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
+
+# Install Spark (same version as in your Spark cluster)
+#RUN curl -L https://downloads.apache.org/spark/spark-${SPARK_VERSION}/spark-${SPARK_VERSION}-bin-hadoop${HADOOP_VERSION}.tgz \
+#    | tar -xz -C /usr/local/ && \
+#    ln -s /usr/local/spark-${SPARK_VERSION}-bin-hadoop${HADOOP_VERSION} /usr/local/spark
+
+# Copy the tarball into the image
+COPY ./lib/spark-3.1.1-bin-hadoop3.2.tgz /tmp/
+COPY ./lib/pyspark-3.1.1.tar.gz /tmp/
+
+# Extract and clean up
+RUN tar -xzf /tmp/spark-3.1.1-bin-hadoop3.2.tgz -C /opt/ && \
+    rm /tmp/spark-3.1.1-bin-hadoop3.2.tgz && \
+    mv /opt/spark-3.1.1-bin-hadoop3.2 /usr/local/spark && \
+    ln -s /opt/spark-3.1.1-bin-hadoop3.2 /usr/local/spark
+
+RUN pip install /tmp/pyspark-3.1.1.tar.gz && \
+    rm /tmp/pyspark-3.1.1.tar.gz
+
+ENV SPARK_HOME=/usr/local/spark
+
+ENV PATH=$JAVA_HOME/bin:$PATH
+ENV PATH=$SPARK_HOME/bin:$PATH
+
+# Install Python libraries for Spark, Hive, HDFS
+#RUN pip install sasl hdfs pyarrow
+
+RUN chown -R jovyan:users /home/jovyan
+USER jovyan
+
+# Explicitly define entrypoint
+#ENTRYPOINT ["start-notebook.sh"]

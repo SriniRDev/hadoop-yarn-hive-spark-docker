@@ -1,0 +1,38 @@
+services:
+  namenode:
+    image: bde2020/hadoop-namenode:2.0.0-hadoop3.2.1-java8
+    container_name: namenode
+    hostname: namenode
+    environment:
+      - CLUSTER_NAME=hadoop-cluster
+    volumes:
+      - ./hdfs_namenode:/hadoop/dfs/name
+      - ./conf/core-site.xml:/opt/hadoop-3.2.1/etc/hadoop/core-site.xml
+    ports:
+      - "9870:9870"
+      - "8020:8020"
+    networks:
+      - spark-net
+
+  datanode:
+    image: bde2020/hadoop-datanode:2.0.0-hadoop3.2.1-java8
+    container_name: datanode
+    hostname: datanode
+    environment:
+      - CLUSTER_NAME=hadoop-cluster
+      - CORE_CONF_fs_defaultFS=hdfs://namenode:8020
+    volumes:
+      - ./hdfs_datanode:/hadoop/dfs/data
+      - ./conf/core-site.xml:/opt/hadoop-3.2.1/etc/hadoop/core-site.xml
+    ports:
+      - "9864:9864"
+    networks:
+      - spark-net
+
+volumes:
+  hdfs_namenode:
+  hdfs_datanode:
+
+networks:
+  spark-net:
+    external: true

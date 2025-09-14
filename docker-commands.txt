@@ -1,0 +1,76 @@
+docker network create spark-net
+
+docker-compose -f docker-compose-hdfs.yml up -d
+check http://localhost:9870 and wait for namenode to start
+docker logs namenode
+
+docker-compose -f docker-compose-yarn.ymlup -d
+Check YARN UI: http://localhost:8088
+
+docker-compose -f docker-compose-composite-hive.yml up -d
+docker exec -it hive-metastore-postgresql psql -h localhost -p 5432 -U hive
+docker exec -it hive-server
+beeline -u jdbc:hive2://localhost:10000
+
+docker-compose -f docker-compose.hive.yml up -d
+docker logs hive-metastore
+docker logs hive-server
+
+docker exec -it hive-server bash
+beeline -u jdbc:hive2://localhost:10000
+
+
+Start only a specific service from composite docker compose file:
+docker-compose -f docker-compose-composite-hive.yml restart hive-server
+
+docker compose -f docker-compose-spark.yml build
+docker compose -f docker-compose-spark.yml up -d
+http://localhost:8080/
+
+docker-compose -f docker-compose-jupyter.yml build --no-cache
+docker-compose -f docker-compose-jupyter.yml up -d
+
+
+https://archive.apache.org/dist/spark/spark-3.1.1/
+https://hadoop.apache.org/release/3.2.1.html
+
+
+Run inside the namenode container:
+
+docker exec -it namenode bash
+hdfs dfs -mkdir /tmp
+hdfs dfs -mkdir /user
+hdfs dfs -mkdir /user/hive
+hdfs dfs -chmod -R 777 /user/hive
+
+
+
+To access services:
+-------------------
+From host(not working):
+spark-shell --master spark://localhost:7077
+
+export HADOOP_HOME="/path/to/hadoop"
+export PATH=$HADOOP_HOME/bin:$PATH
+
+
+Login as root to container:
+docker exec -u 0 -it spark-master bash
+
+
+$SPARK_HOME/sbin/start-worker.sh --cores 2 --memory 2G spark://spark-master:7077
+
+
+From spark-master docker container:
+-----------------------------------
+docker exec -it spark-master /bin/bash
+spark-shell --master spark://spark-master:7077
+val df = spark.read.csv("hdfs://namenode:8020/user/hive/warehouse/crm.db/emp/emp.txt")
+df.show(false)
+
+spark.conf.get("spark.sql.catalogImplementation")
+
+spark.catalog.listDatabases().show()
+
+val h = spark.table("crm.emp")
+h.show(10, false)

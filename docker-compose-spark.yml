@@ -1,0 +1,98 @@
+services:
+  # Spark Master
+  spark-master:
+    build:
+      context: .
+      dockerfile: Dockerfile.spark
+    container_name: spark-master
+    hostname: spark-master
+    environment:
+      - INIT_DAEMON_STEP=setup_spark
+      - SPARK_MASTER=spark://spark-master:7077
+      - SPARK_SQL_CATALOG_IMPLEMENTATION=hive
+      - HIVE_HOME=/opt/hive
+      - HADOOP_CONF_DIR=/opt/spark/conf
+    volumes:
+      #- ./conf/hive-site.xml:/opt/hive/conf/hive-site.xml
+      - ./conf/hive-site.xml:/opt/spark/conf/hive-site.xml
+      - ./conf/core-site.xml:/opt/spark/conf/core-site.xml
+      - ./conf/hdfs-site.xml:/opt/spark/conf/hdfs-site.xml
+      - ./lib/postgresql-42.7.7.jar:/opt/spark/jars/postgresql-42.7.7.jar
+    ports:
+      - "7077:7077"
+      - "8080:8080"
+    healthcheck:
+          test: ["CMD", "curl", "-f", "http://localhost:8080"]
+          interval: "30s"
+          timeout: "10s"
+          retries: 5
+          start_period: "20s"
+    networks:
+      - spark-net      
+  
+  # Spark Worker 1
+  spark-worker-1:
+    build:
+      context: .
+      dockerfile: Dockerfile.spark
+    container_name: spark-worker-1
+    hostname: spark-worker-1
+    environment:
+      - SPARK_MASTER=spark://spark-master:7077
+      - HIVE_HOME=/opt/hive
+      - HADOOP_CONF_DIR=/opt/spark/conf
+    depends_on:
+      - spark-master
+    volumes:
+      #- ./conf/hive-site.xml:/opt/hive/conf/hive-site.xml
+      - ./conf/hive-site.xml:/opt/spark/conf/hive-site.xml
+      - ./conf/core-site.xml:/opt/spark/conf/core-site.xml
+      - ./conf/hdfs-site.xml:/opt/spark/conf/hdfs-site.xml
+      - ./lib/postgresql-42.7.7.jar:/opt/spark/jars/postgresql-42.7.7.jar
+    ports:
+      - "8081:8081"
+    command: /bin/bash /usr/local/bin/worker.sh
+    healthcheck:
+          test: ["CMD", "curl", "-f", "http://localhost:8081"]
+          interval: "30s"
+          timeout: "10s"
+          retries: 5
+          start_period: "20s"
+    networks:
+      - spark-net
+
+  # Spark Worker 2
+  spark-worker-2:
+    build:
+      context: .
+      dockerfile: Dockerfile.spark
+    container_name: spark-worker-2
+    hostname: spark-worker-2
+    environment:
+      - SPARK_MASTER=spark://spark-master:7077
+      - HIVE_HOME=/opt/hive
+      - HADOOP_CONF_DIR=/opt/spark/conf
+    depends_on:
+      - spark-master
+    volumes:
+      #- ./conf/hive-site.xml:/opt/hive/conf/hive-site.xml
+      - ./conf/hive-site.xml:/opt/spark/conf/hive-site.xml
+      - ./conf/core-site.xml:/opt/spark/conf/core-site.xml
+      - ./conf/hdfs-site.xml:/opt/spark/conf/hdfs-site.xml
+      - ./lib/postgresql-42.7.7.jar:/opt/spark/jars/postgresql-42.7.7.jar
+    ports:
+      - "8082:8081"
+    command: /bin/bash /usr/local/bin/worker.sh
+    healthcheck:
+          test: ["CMD", "curl", "-f", "http://localhost:8081"]
+          interval: "30s"
+          timeout: "10s"
+          retries: 5
+          start_period: "20s"
+    networks:
+      - spark-net
+
+
+networks:
+  spark-net:
+    external: true

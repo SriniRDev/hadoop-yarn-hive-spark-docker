@@ -1,0 +1,43 @@
+hdfs_namenode
+hdfs_datanode
+notebooks
+
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/timing.properties
+# https://github.com/takari/maven-wrapper#usage-without-binary-jar
+.mvn/wrapper/maven-wrapper.jar
+
+# Eclipse
+.classpath
+.project
+.settings/
+
+# Intellij
+.idea/
+*.iml
+*.is
+*.ipr
+
+# Mac
+.DS_Store
+.*.swp
+
+# Maven
+log/
+target/
+build/
+*/log/*
+*/target/*
+*/build/*
+dependency-reduced-pom.xml
+
+# Tests
+**/derby.log
+**/metastore_db

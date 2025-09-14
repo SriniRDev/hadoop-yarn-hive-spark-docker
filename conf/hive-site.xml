@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+
+  <!-- ================== Metastore DB connection (Postgres) ================== -->
+  <property>
+    <name>javax.jdo.option.ConnectionURL</name>
+    <value>jdbc:postgresql://hive-metastore-postgresql:5432/metastore</value>
+    <description>Postgres connection string for Hive Metastore</description>
+  </property>
+
+  <property>
+    <name>javax.jdo.option.ConnectionDriverName</name>
+    <value>org.postgresql.Driver</value>
+    <description>JDBC driver class</description>
+  </property>
+
+  <property>
+    <name>javax.jdo.option.ConnectionUserName</name>
+    <value>hive</value>
+    <description>DB username for Metastore</description>
+  </property>
+
+  <property>
+    <name>javax.jdo.option.ConnectionPassword</name>
+    <value>hive</value>
+    <description>DB password for Metastore</description>
+  </property>
+
+  <!-- ================== Hive Metastore ================== -->
+  <property>
+    <name>hive.metastore.uris</name>
+    <value>thrift://hive-metastore:9083</value>
+    <description>URI for remote metastore</description>
+  </property>
+
+  <property>
+    <name>hive.metastore.warehouse.dir</name>
+    <value>/user/hive/warehouse</value>
+    <description>Default warehouse location in HDFS</description>
+  </property>
+
+  <property>
+    <name>datanucleus.schema.autoCreateAll</name>
+    <value>false</value>
+  </property>
+
+  <property>
+    <name>datanucleus.autoCreateSchema</name>
+    <value>false</value>
+  </property>
+
+  <property>
+    <name>hive.metastore.schema.verification</name>
+    <value>true</value>
+    <description>Enforce schema verification against DB</description>
+  </property>
+
+  <!-- ================== Hive Execution (MapReduce/YARN) ================== -->
+  <property>
+    <name>hive.execution.engine</name>
+    <value>mr</value>
+    <description>Execution engine: mr = MapReduce, tez, or spark</description>
+  </property>
+
+  <property>
+    <name>mapreduce.framework.name</name>
+    <value>yarn</value>
+  </property>
+
+  <property>
+    <name>yarn.resourcemanager.address</name>
+    <value>resourcemanager:8032</value>
+  </property>
+
+  <property>
+    <name>yarn.resourcemanager.scheduler.address</name>
+    <value>resourcemanager:8030</value>
+  </property>
+
+  <property>
+    <name>yarn.resourcemanager.resource-tracker.address</name>
+    <value>resourcemanager:8031</value>
+  </property>
+
+  <!-- ================== FileSystem (HDFS) ================== -->
+  <property>
+    <name>fs.defaultFS</name>
+    <value>hdfs://namenode:8020</value>
+    <description>Default filesystem for Hive (your HDFS namenode)</description>
+  </property>
+
+  <!-- ================== HiveServer2 ================== -->
+  <property>
+    <name>hive.server2.thrift.port</name>
+    <value>10000</value>
+  </property>
+
+  <property>
+    <name>hive.server2.thrift.bind.host</name>
+    <value>0.0.0.0</value>
+  </property>
+
+  <property>
+    <name>hive.server2.webui.port</name>
+    <value>10002</value>
+  </property>
+
+  <!-- ================== Hive root proxy impersonation ================== -->
+  <property>
+    <name>hive.server2.enable.doAs</name>
+    <value>true</value>
+  </property>
+
+  <property>
+    <name>hadoop.proxyuser.root.groups</name>
+    <value>*</value>
+  </property>
+
+  <property>
+    <name>hadoop.proxyuser.root.hosts</name>
+    <value>*</value>
+  </property>
+
+  <!-- ================== Misc ================== -->
+  <property>
+    <name>hive.cli.print.header</name>
+    <value>true</value>
+  </property>
+
+  <property>
+    <name>hive.cli.print.current.db</name>
+    <value>true</value>
+  </property>
+
+</configuration>

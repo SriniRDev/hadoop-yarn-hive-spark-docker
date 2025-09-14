@@ -1,0 +1,99 @@
+services:
+  hive-metastore-postgresql:
+    platform: linux/amd64
+    image: postgres:14
+    container_name: hive-metastore-postgresql
+    environment:
+      POSTGRES_USER: hive
+      POSTGRES_PASSWORD: hive
+      POSTGRES_DB: metastore
+    ports:
+      - "5432:5432"
+    volumes:
+      - hive_pgdata:/var/lib/postgresql/data
+    networks:
+      - spark-net  
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hive -d metastore"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  hive-metastore:
+    platform: linux/amd64
+    image: bde2020/hive:2.3.2-postgresql-metastore
+    container_name: hive-metastore
+    environment:
+      SERVICE_NAME: metastore
+      DB_DRIVER: postgres
+      DB_URI: jdbc:postgresql://hive-metastore-postgresql:5432/metastore
+      DB_USER: hive
+      DB_PASSWORD: hive
+      CORE_CONF_fs_defaultFS: hdfs://namenode:8020
+    command: /opt/hive/bin/hive --service metastore   # ✅ force correct process
+    depends_on:
+      hive-metastore-postgresql:
+        condition: service_healthy
+      #namenode:
+      #  condition: service_healthy
+    entrypoint: >
+      sh -c "
+      schematool -dbType postgres -initSchema --verbose || true &&
+      /opt/hive/bin/hive --service metastore
+      "
+    ports:
+      - "9083:9083"
+    networks:
+      - spark-net
+    volumes:
+      - ./conf/hive-site.xml:/opt/hive/conf/hive-site.xml  
+      - ./conf/core-site.xml:/opt/hadoop-2.7.4/etc/hadoop/core-site.xml
+      - ./lib/postgresql-42.7.7.jar:/opt/hive/lib/postgresql-42.7.7.jar
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z localhost 9083 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+
+  hive-server:
+    platform: linux/amd64
+    image: bde2020/hive:2.3.2-postgresql-metastore
+    container_name: hive-server
+    environment:
+      SERVICE_NAME: hiveserver2
+      DB_DRIVER: postgres
+      DB_URI: jdbc:postgresql://hive-metastore-postgresql:5432/metastore
+      DB_USER: hive
+      DB_PASSWORD: hive
+      CORE_CONF_fs_defaultFS: hdfs://namenode:8020   # ✅ fixed to match your Namenode
+    depends_on:
+      hive-metastore:
+        condition: service_healthy
+      hive-metastore-postgresql:
+        condition: service_healthy
+      #namenode:
+      #  condition: service_healthy
+    ports:
+      - "10000:10000"   # JDBC
+      - "10002:10002"   # Web UI
+    networks:
+      - spark-net
+    volumes:
+      - ./conf/hive-site.xml:/opt/hive/conf/hive-site.xml
+      - ./init-hdfs-hive.sh:/init-hdfs-hive.sh
+    command: ["/bin/bash", "/init-hdfs-hive.sh"]
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z localhost 10000 || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 20s
+
+volumes:
+  hive_pgdata:
+
+networks:
+  spark-net:
+    external: true

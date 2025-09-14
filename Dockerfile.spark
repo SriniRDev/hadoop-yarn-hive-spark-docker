@@ -1,0 +1,51 @@
+# Extend the existing Spark image
+FROM bde2020/spark-master:3.1.1-hadoop3.2
+
+# Install dependencies
+USER root
+#RUN apt-get update && apt-get install -y wget default-jdk curl unzip \
+#    && apt-get clean
+RUN apk update && apk add --no-cache wget openjdk8 curl unzip bash
+
+# Set environment variables
+
+ENV HIVE_VERSION=2.3.2
+ENV HIVE_HOME=/opt/hive
+ENV PATH=$PATH:$HIVE_HOME/bin
+
+# Environment variable for workers to be able to run worker.sh from SPARK_HOME
+ENV SPARK_HOME=/spark
+ENV PATH=$PATH:$SPARK_HOME/bin
+
+COPY ./certificate/CAcert_dummy.pem /usr/local/share/ca-certificates/CAcert_dummy.pem
+RUN apk add --no-cache ca-certificates && update-ca-certificates
+
+#https://archive.apache.org/dist/hive/hive-${HIVE_VERSION}/apache-hive-${HIVE_VERSION}-bin.tar.gz
+#https://downloads.apache.org/hive/hive-${HIVE_VERSION}/apache-hive-${HIVE_VERSION}-bin.tar.gz
+# Download and extract Hive
+#RUN wget https://downloads.apache.org/hive/hive-${HIVE_VERSION}/apache-hive-${HIVE_VERSION}-bin.tar.gz \
+#    && tar -xzf apache-hive-${HIVE_VERSION}-bin.tar.gz -C /opt/ \
+#    && mv /opt/apache-hive-${HIVE_VERSION}-bin $HIVE_HOME \
+#    && rm apache-hive-${HIVE_VERSION}-bin.tar.gz
+
+COPY ./lib/apache-hive-${HIVE_VERSION}-bin.tar.gz ./apache-hive-${HIVE_VERSION}-bin.tar.gz
+
+# Download PostgreSQL JDBC driver for Hive
+#RUN wget https://jdbc.postgresql.org/download/postgresql-42.7.7.jar -P $HIVE_HOME/lib/
+
+COPY ./lib/postgresql-42.7.7.jar $HIVE_HOME/conf/postgresql-42.7.7.jar
+
+# Copy hive-site.xml (must be created and placed in the same folder)
+COPY ./conf/hive-site.xml $HIVE_HOME/conf/hive-site.xml
+
+# Copy worker.sh (to be used by worker service to spin up the container as a worker)
+COPY ./conf/worker.sh /usr/local/bin/worker.sh
+RUN chmod +x /usr/local/bin/worker.sh
+
+# Set Spark to use Hive
+ENV SPARK_SQL_CATALOG_IMPLEMENTATION=hive
+
+RUN adduser -D -s /bin/bash spark
+
+USER spark
+

@@ -1,0 +1,44 @@
+services:
+  jupyter:
+    build:
+      context: .
+      dockerfile: Dockerfile.jupyter
+    image: sparkhivejupyter:latest
+    container_name: jupyter
+    restart: unless-stopped
+    ports:
+      - "8888:8888"
+    environment:
+      # Ensure PySpark inside Jupyter points to Spark
+      PYSPARK_PYTHON: python3
+      PYSPARK_DRIVER_PYTHON: /opt/conda/bin/jupyter
+      PYSPARK_DRIVER_PYTHON_OPTS: lab --ip=0.0.0.0 --no-browser --allow-root
+      SPARK_HOME: /usr/local/spark
+      # PATH: /usr/local/spark/bin:$PATH
+      JUPYTER_ENABLE_LAB: yes
+      #JUPYTER_SERVER_EXTENSION: "jupyterlab"
+      #JUPYTERLAB_DIR: /opt/conda/share/jupyter/lab
+      #JUPYTER_LAB_APP: notebook
+      #JUPYTER_LAB_PORT: 8888
+      #JUPYTER_APP_URL: http://0.0.0.0:8888/lab
+    #entrypoint: ["start-notebook.sh", "jupyter", "lab"]
+    volumes:
+      # Persist your notebooks on the host
+      - ./notebooks:/home/jovyan/work
+      - ./conf/hive-site.xml:/usr/local/spark/conf/hive-site.xml
+      - ./conf/core-site.xml:/usr/local/spark/conf/core-site.xml
+      - ./conf/hdfs-site.xml:/usr/local/spark/conf/hdfs-site.xml
+
+    networks:
+      - spark-net   # <-- must match the network in your existing cluster
+    healthcheck:
+      disable: false
+      test: ["CMD", "curl", "-f", "http://localhost:8888"]
+      interval: 60s
+      timeout: 30s
+      retries: 5
+      start_period: 60s
+    
+networks:
+  spark-net:
+    external: true   # important: reuse the cluster network instead of creating a new one
